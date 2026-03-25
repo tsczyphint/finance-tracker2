@@ -1556,25 +1556,45 @@ function initProxyBanner() {
   }
 }
 
-// ---- 股價抓取：Finnhub（台股 .TW/.TWO，美股直接代碼） ----
-async function fetchStockPrice(stock) {
+// ---- 股價抓取 ----
+// 美股：Finnhub（需要 Key）
+async function fetchUSPrice(code) {
   const key = getFinnhubKey();
   if (!key) return null;
-  const suffixes = stock.market === 'TW' ? ['.TW', '.TWO'] : [''];
-  for (const suffix of suffixes) {
+  try {
+    const res = await fetch(
+      `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(code)}&token=${key}`,
+      { cache: 'no-store' }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    const price = json?.c > 0 ? json.c : json?.pc;
+    return price > 0 ? price : null;
+  } catch(e) { return null; }
+}
+
+// 台股：Yahoo Finance（免費、不需要 Key、https 下無 CORS 問題）
+async function fetchTWPrice(code) {
+  const symbol = encodeURIComponent(code + '.TW');
+  // 先試 .TW（上市），失敗再試 .TWO（上櫃）
+  for (const suffix of ['.TW', '.TWO']) {
     try {
-      const res = await fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(stock.code + suffix)}&token=${key}`,
-        { cache: 'no-store' }
-      );
+      const sym = encodeURIComponent(code + suffix);
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`;
+      const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) continue;
       const json = await res.json();
-      // c = 目前成交價，pc = 昨收（盤後備援）
-      const price = json?.c > 0 ? json.c : json?.pc;
-      if (price && price > 0) return price;
+      const meta = json?.chart?.result?.[0]?.meta;
+      if (!meta) continue;
+      const price = meta.regularMarketPrice ?? meta.previousClose;
+      if (price > 0) return price;
     } catch(e) {}
   }
   return null;
+}
+
+async function fetchStockPrice(stock) {
+  return stock.market === 'TW' ? fetchTWPrice(stock.code) : fetchUSPrice(stock.code);
 }
 
 async function refreshAllPrices() {
@@ -1679,20 +1699,13 @@ async function runDiagnostic() {
     }
 
     if (testTW) {
-      let twOk = false;
-      for (const suffix of ['.TW', '.TWO']) {
-        try {
-          const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${testTW.code}${suffix}&token=${key}`, { cache:'no-store' });
-          const j = await r.json();
-          const p = j?.c > 0 ? j.c : j?.pc;
-          if (p) {
-            rows.push(row(`台股測試（${testTW.code}${suffix}）`, ok(`取得價格 NT$${p}`)));
-            twOk = true; break;
-          }
-        } catch(e) {}
+      try {
+        const p = await fetchTWPrice(testTW.code);
+        rows.push(row(`台股測試（${testTW.code} / Yahoo）`,
+          p ? ok(`取得價格 NT$${p}`) : err('無法取得 — 請確認股票代碼正確，或目前為非交易時段')));
+      } catch(e) {
+        rows.push(row(`台股測試（${testTW.code}）`, err('請求失敗：' + e.message)));
       }
-      if (!twOk) rows.push(row(`台股測試（${testTW.code}）`,
-        err('兩種格式（.TW / .TWO）均無法取得價格 — 台股在 Finnhub 免費方案可能不支援，建議改用付費方案或手動更新')));
     }
   }
 
