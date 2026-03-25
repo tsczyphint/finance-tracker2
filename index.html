@@ -2,7 +2,12 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="財富記事">
+<meta name="theme-color" content="#0f0f13">
 <title>財富記事本</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
@@ -405,12 +410,108 @@
   .page-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
 
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* ── 手機底部 Tab Bar ── */
+  .bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 200;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bottom-nav-inner {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .bottom-nav-inner::-webkit-scrollbar { display: none; }
+  .bnav-item {
+    flex: 1;
+    min-width: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px 6px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 10px;
+    gap: 3px;
+    border: none;
+    background: none;
+    transition: color 0.15s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bnav-item.active { color: var(--accent); }
+  .bnav-icon { font-size: 18px; line-height: 1; }
+  .bnav-label { font-size: 9px; letter-spacing: 0.2px; white-space: nowrap; }
+
   @media (max-width: 700px) {
+    /* 隱藏側邊欄，顯示底部導覽 */
+    .sidebar { display: none; }
+    .bottom-nav { display: block; }
+
+    /* 主內容區 */
+    .app { flex-direction: column; height: 100dvh; }
+    .main {
+      padding: 14px 12px;
+      padding-bottom: calc(72px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* 版面 */
     .two-col { grid-template-columns: 1fr; }
     .form-row.cols-2, .form-row.cols-3 { grid-template-columns: 1fr; }
-    .sidebar { width: 56px; min-width: 56px; }
-    .nav-item span { display: none; }
-    .logo h1, .logo p { display: none; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .page-title { font-size: 18px; margin-bottom: 4px; }
+    .page-sub { margin-bottom: 14px; }
+    .section-header { flex-wrap: wrap; gap: 8px; }
+    .card { padding: 14px; }
+
+    /* Modal 手機從底部滑上 */
+    .modal-overlay { align-items: flex-end; }
+    .modal {
+      width: 100% !important;
+      max-width: 100% !important;
+      border-radius: 20px 20px 0 0;
+      max-height: 92dvh;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+
+    /* 表格水平捲動 */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 480px; font-size: 12px; }
+    th, td { padding: 8px 8px; }
+
+    /* 股票頁 */
+    #page-stocks .section-header > div:last-child { flex-wrap: wrap; gap: 6px; }
+    #price-source-banner { padding: 10px 12px; }
+    #price-source-banner > div { flex-wrap: wrap; }
+    .stock-refresh-btn { font-size: 12px; padding: 5px 10px; }
+
+    /* rec-card */
+    .rec-card { flex-wrap: wrap; gap: 10px; }
+    .rec-actions { width: 100%; justify-content: flex-end; margin-top: 2px; }
+
+    /* cash card */
+    .cash-card-inner { flex-wrap: wrap; }
+
+    /* 現金/基金 card 按鈕堆疊 */
+    .card-action-row { flex-wrap: wrap; gap: 6px; }
+
+    /* 統計數字大小 */
+    .stat-value { font-size: 18px; }
+    .stat-card { padding: 12px 14px; }
+
+    /* 診斷 modal */
+    #diag-body { font-size: 12px; }
+    #diag-body > div { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -447,6 +548,33 @@
       </div>
     </nav>
   </aside>
+
+  <!-- 手機底部 Tab Bar -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <div class="bottom-nav-inner">
+      <div class="bnav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+        <span class="bnav-icon">◈</span><span class="bnav-label">總覽</span>
+      </div>
+      <div class="bnav-item" onclick="showPage('expenses')" data-page="expenses">
+        <span class="bnav-icon">◉</span><span class="bnav-label">開銷</span>
+      </div>
+      <div class="bnav-item" onclick="showPage('stocks')" data-page="stocks">
+        <span class="bnav-icon">◬</span><span class="bnav-label">股票</span>
+      </div>
+      <div class="bnav-item" onclick="showPage('realestate')" data-page="realestate">
+        <span class="bnav-icon">⬡</span><span class="bnav-label">房產</span>
+      </div>
+      <div class="bnav-item" onclick="showPage('cash')" data-page="cash">
+        <span class="bnav-icon">◇</span><span class="bnav-label">存款</span>
+      </div>
+      <div class="bnav-item" onclick="showPage('funds')" data-page="funds">
+        <span class="bnav-icon">◑</span><span class="bnav-label">基金</span>
+      </div>
+      <div class="bnav-item" onclick="showPage('recurring')" data-page="recurring">
+        <span class="bnav-icon">↻</span><span class="bnav-label">固定支出</span>
+      </div>
+    </div>
+  </nav>
 
   <!-- Main -->
   <main class="main">
@@ -1079,9 +1207,13 @@ if (!data.recurring.length) {
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => {
     if(n.getAttribute('onclick').includes(name)) n.classList.add('active');
+  });
+  document.querySelectorAll('.bnav-item').forEach(n => {
+    if(n.dataset.page === name) n.classList.add('active');
   });
   if(name==='dashboard') renderDashboard();
   if(name==='expenses') renderExpenses();
@@ -1150,7 +1282,7 @@ function renderDashboard() {
     <div class="stat-card"><div class="stat-label">本月開銷</div><div class="stat-value ${monthExp>20000?'negative':'positive'}">NT$ ${fmt(monthExp)}</div><div class="stat-sub">${ym.replace('-','年')}月</div></div>
     <div class="stat-card"><div class="stat-label">股票市值</div><div class="stat-value">NT$ ${fmt(stockVal)}</div><div class="stat-sub ${stockVal>stockCost?'positive':'negative'}">${stockVal>stockCost?'▲':'▼'} ${pct(stockVal,stockCost)}%</div></div>
     <div class="stat-card"><div class="stat-label">房產淨值</div><div class="stat-value">NT$ ${fmt(reEquity)}</div><div class="stat-sub">月租 NT$ ${fmt(monthRent)}</div></div>
-    <div class="stat-card" style="${dueSoonCount>0?'border-color:rgba(251,191,36,0.4);':''}" onclick="showPage('recurring')" style="cursor:pointer;">
+    <div class="stat-card" style="cursor:pointer;${dueSoonCount>0?'border-color:rgba(251,191,36,0.4);':''}" onclick="showPage('recurring')">
       <div class="stat-label">月固定支出</div>
       <div class="stat-value negative">NT$ ${fmt(recurringTotal)}</div>
       <div class="stat-sub">${data.recurring.length} 項${dueSoonCount>0?` · <span style="color:var(--amber)">⚠ ${dueSoonCount} 筆即將到期</span>`:''}</div>
