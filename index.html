@@ -1152,66 +1152,17 @@ function save(key) {
   localStorage.setItem(KEYS[key], JSON.stringify(data[key]));
 }
 
-// ---- Sample Data (first load) ----
-if (!data.expenses.length) {
-  const today = new Date();
-  const m = String(today.getMonth()+1).padStart(2,'0');
-  const y = today.getFullYear();
-  data.expenses = [
-    { id:1, date:`${y}-${m}-01`, title:'早午餐', category:'食物', amount:180, note:'早餐店' },
-    { id:2, date:`${y}-${m}-02`, title:'悠遊卡儲值', category:'交通', amount:500, note:'' },
-    { id:3, date:`${y}-${m}-03`, title:'Netflix', category:'娛樂', amount:390, note:'月費' },
-    { id:4, date:`${y}-${m}-04`, title:'超市採購', category:'食物', amount:620, note:'家庭用品' },
-    { id:5, date:`${y}-${m}-05`, title:'健身房', category:'健康', amount:1200, note:'月費' },
-    { id:6, date:`${y}-${m}-07`, title:'午餐', category:'食物', amount:150, note:'' },
-    { id:7, date:`${y}-${m}-08`, title:'計程車', category:'交通', amount:280, note:'加班回家' },
-    { id:8, date:`${y}-${m}-10`, title:'UNIQLO', category:'購物', amount:1890, note:'' },
-  ];
-  save('expenses');
-}
-if (!data.stocks.length) {
-  data.stocks = [
-    { id:1, code:'2330', name:'台積電', market:'TW', shares:1000, cost:520, price:930 },
-    { id:2, code:'0050', name:'元大台灣50', market:'TW', shares:5000, cost:125, price:198 },
-    { id:3, code:'AAPL', name:'Apple', market:'US', shares:50, cost:155, price:213 },
-    { id:4, code:'NVDA', name:'NVIDIA', market:'US', shares:30, cost:85, price:875 },
-    { id:5, code:'2884', name:'玉山金控', market:'TW', shares:10000, cost:27, price:32 },
-  ];
-  save('stocks');
-}
-if (!data.realestate.length) {
-  data.realestate = [
-    { id:1, name:'新竹市東區兩房', buyPrice:9800000, currentValue:12500000, loanBalance:6000000, monthlyRent:0, buyDate:'2019-06-15', type:'自住' },
-    { id:2, name:'台北市中山區套房', buyPrice:6500000, currentValue:8200000, loanBalance:3500000, monthlyRent:22000, buyDate:'2021-03-01', type:'出租' },
-  ];
-  save('realestate');
-}
-if (!data.cash.length) {
-  data.cash = [
-    { id:201, name:'國泰世華活存', type:'活存', amount:350000, currency:'TWD', rate:0.80, maturity:'', note:'' },
-    { id:202, name:'台灣銀行定存', type:'定存', amount:500000, currency:'TWD', rate:1.615, maturity:'2025-12-31', note:'一年期' },
-    { id:203, name:'現金備用金', type:'現金', amount:30000, currency:'TWD', rate:0, maturity:'', note:'' },
-    { id:204, name:'美元活存', type:'外幣', amount:5000, currency:'USD', rate:4.5, maturity:'', note:'富邦銀行' },
-  ];
-  save('cash');
-}
-if (!data.funds.length) {
-  data.funds = [
-    { id:301, name:'元大台灣高股息', type:'股票型', units:10000, cost:18.5, nav:21.3, date:'2022-06-01', note:'0056' },
-    { id:302, name:'先鋒全球股票 ETF', type:'股票型', units:200, cost:95.0, nav:118.5, date:'2021-03-15', note:'VT' },
-    { id:303, name:'富達全球債券', type:'債券型', units:5000, cost:12.0, nav:11.4, date:'2023-01-10', note:'' },
-  ];
-  save('funds');
-}
-if (!data.recurring.length) {
-  data.recurring = [
-    { id:101, name:'Netflix', amount:390, category:'訂閱', dayOfMonth:3, method:'信用卡', remindDays:1, note:'家庭方案' },
-    { id:102, name:'健身房月費', amount:1200, category:'健康', dayOfMonth:5, method:'信用卡', remindDays:3, note:'' },
-    { id:103, name:'電費', amount:1800, category:'水電', dayOfMonth:15, method:'轉帳', remindDays:3, note:'每月估計' },
-    { id:104, name:'手機月租', amount:699, category:'訂閱', dayOfMonth:20, method:'信用卡', remindDays:2, note:'中華電信' },
-    { id:105, name:'房貸', amount:28000, category:'貸款', dayOfMonth:1, method:'轉帳', remindDays:5, note:'新竹自住' },
-  ];
-  save('recurring');
+// ---- 初始化（只在全新安裝時執行一次，之後永遠以 localStorage 為準）----
+if (!localStorage.getItem('ftInitDone')) {
+  // 全新用戶：清空所有資料，從空白開始
+  data.expenses  = [];
+  data.stocks    = [];
+  data.realestate= [];
+  data.cash      = [];
+  data.funds     = [];
+  data.recurring = [];
+  Object.keys(KEYS).forEach(k => save(k));
+  localStorage.setItem('ftInitDone', '1');
 }
 
 // ---- Navigation ----
