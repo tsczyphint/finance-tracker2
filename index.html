@@ -475,13 +475,24 @@
     .card { padding: 14px; }
 
     /* Modal 手機從底部滑上 */
-    .modal-overlay { align-items: flex-end; }
+    .modal-overlay {
+      align-items: flex-end;
+      bottom: calc(60px + env(safe-area-inset-bottom));
+    }
     .modal {
       width: 100% !important;
       max-width: 100% !important;
       border-radius: 20px 20px 0 0;
       max-height: 92dvh;
-      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      padding-bottom: 8px;
+    }
+    .modal .modal-footer {
+      position: sticky;
+      bottom: 0;
+      background: var(--surface);
+      padding: 12px 0 4px;
+      margin-top: 8px;
+      border-top: 1px solid var(--border);
     }
 
     /* 表格水平捲動 */
